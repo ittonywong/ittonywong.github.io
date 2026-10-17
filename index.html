@@ -1,0 +1,53 @@
+<!doctype html><html lang="zh-HK"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="icon" href="data:,"><title>九巴即時到站</title><style>
+*{box-sizing:border-box}body{font-family:sans-serif;margin:0;background:#f4f4f4}header{background:#e2001a;color:#fff;padding:12px}h1{margin:0;font-size:1.3em}
+.bar{padding:8px;display:flex;gap:6px;flex-wrap:wrap}select,input,button{font-size:1em;padding:6px;max-width:100%}input{flex:1;min-width:120px}
+.s{background:#fff;margin:6px 8px;padding:10px;border-radius:8px}.n{font-weight:bold}.e{color:#555;font-size:.85em}.t{color:#e2001a;font-weight:bold;margin-top:4px}
+.tabs{display:flex}.tabs button{flex:1;border:0;padding:10px;background:#ddd}.tabs button.on{background:#fff;font-weight:bold;color:#e2001a}.del{float:right;background:#fff;border:1px solid #ccc;border-radius:6px}.err{color:#b00;padding:0 10px}#fst{padding:0 10px;font-size:.85em}#st{padding:0 10px;font-size:.85em;color:#333}</style></head><body>
+<header><h1>九巴即時到站</h1><div id="rt"></div></header>
+<div class="tabs"><button id="t1" class="on">284 全線</button><button id="t2">我的收藏</button></div><div id="v1"><div class="bar"><select id="dir"></select><select id="pick"><option value="">全部車站</option></select><input id="q" placeholder="搜尋車站…"><button id="r">更新</button></div>
+<div id="st">載入中…</div><div id="list"></div></div>
+<div id="v2" style="display:none"><div class="bar"><input id="fr" placeholder="輸入路線（例如 1A）" autocapitalize="characters"><button id="fgo">搜尋路線</button></div>
+<div class="bar"><select id="fdir" style="display:none"></select><select id="fstop" style="display:none"></select><button id="fsave" style="display:none">加入收藏</button></div>
+<div id="ferr" class="err"></div><div id="fst"></div><div id="flist"></div></div>
+<script>
+const A='https://data.etabus.gov.hk/v1/transport/kmb/';const j=u=>fetch(A+u).then(r=>r.json());
+let stops={},names={},eta=[],routes={};
+const fx=t=>(t||'').replace(/巿/g,'市');
+async function init(){const etaP=load();try{names=JSON.parse(localStorage.getItem('kmb284names')||'{}')}catch(e){names={}}
+ const info=await Promise.all([['outbound','O'],['inbound','I']].map(async([b,d])=>{const [r,rs]=await Promise.all([j('route/284/'+b+'/1'),j('route-stop/284/'+b+'/1')]);return {d,r,rs}}));
+ const need=new Set();info.forEach(({d,r,rs})=>{if(r.data&&r.data.orig_tc&&rs.data&&rs.data.length){routes[d]=r.data;stops[d]=rs.data;rs.data.forEach(s=>{if(!names[s.stop])need.add(s.stop)})}});
+ await Promise.all([...need].map(async id=>{names[id]=(await j('stop/'+id)).data}));try{localStorage.setItem('kmb284names',JSON.stringify(names))}catch(e){}
+ ['O','I'].forEach(d=>{if(routes[d])dir.add(new Option((d=='O'?'去程':'回程')+'：'+fx(routes[d].orig_tc)+' → '+fx(routes[d].dest_tc),d))});
+ fill();await etaP;render();setInterval(load,30000)}
+function fill(){pick.length=1;(stops[dir.value]||[]).forEach(s=>pick.add(new Option(s.seq+'. '+fx(names[s.stop].name_tc),s.seq)));render()}
+async function load(){try{const r=await j('route-eta/284/1');eta=r.data||[];const ts=eta.length&&eta[0].data_timestamp?new Date(eta[0].data_timestamp).toLocaleTimeString('zh-HK',{hour12:false,timeZone:'Asia/Hong_Kong'}):'—';st.textContent='最後更新：'+new Date().toLocaleTimeString('zh-HK',{hour12:false,timeZone:'Asia/Hong_Kong'})+'（九巴資料時間 '+ts+'，每30秒自動更新）';render()}catch(e){st.textContent='載入失敗：'+e}}
+function fmt(e){if(!e.eta)return e.rmk_tc||'暫無班次';const m=Math.round((new Date(e.eta)-Date.now())/60000);const hm=new Date(e.eta).toLocaleTimeString('zh-HK',{hour:'2-digit',minute:'2-digit',hour12:false,timeZone:'Asia/Hong_Kong'});return (m<=0?'即將抵達':m+' 分鐘')+' ('+hm+')'+(e.rmk_tc?' '+e.rmk_tc:'')}
+function render(){if(!dir.options.length)return;const d=dir.value,q=qv(),p=pick.value;list.innerHTML='';(stops[d]||[]).forEach(s=>{const n=names[s.stop];if(p&&s.seq!=p)return;if(q&&!(n.name_tc+n.name_en).toLowerCase().includes(q))return;
+ const es=eta.filter(e=>e.dir==d&&e.seq==+s.seq&&!(e.eta&&new Date(e.eta)<Date.now()-120000));const el=document.createElement('div');el.className='s';
+ el.innerHTML='<div class="n">'+s.seq+'. '+fx(n.name_tc)+'</div><div class="e">'+n.name_en+'</div><div class="t">'+(es.length?es.map(fmt).join('<br>'):'暫無班次資料')+'</div>';list.append(el)})}
+const qv=()=>q.value.trim().toLowerCase();dir.onchange=fill;pick.onchange=render;q.oninput=render;r.onclick=load;init();
+</script>
+<script>
+const FK='kmbFavs';let favs=[];try{favs=JSON.parse(localStorage.getItem(FK)||'[]')}catch(e){}
+const saveF=()=>localStorage.setItem(FK,JSON.stringify(favs));let RL=null,fStops=[],fNames={};
+t1.onclick=()=>{v1.style.display='';v2.style.display='none';t1.className='on';t2.className=''};
+t2.onclick=()=>{v2.style.display='';v1.style.display='none';t2.className='on';t1.className='';loadF()};
+async function routeList(){if(!RL){const c=sessionStorage.getItem('kmbRL');RL=c?JSON.parse(c):(await j('route/')).data;try{sessionStorage.setItem('kmbRL',JSON.stringify(RL))}catch(e){}}return RL}
+fgo.onclick=async()=>{ferr.textContent='';[fdir,fstop,fsave].forEach(x=>x.style.display='none');const r=fr.value.trim().toUpperCase();if(!r){ferr.textContent='請輸入路線號碼';return}
+ try{const v=(await routeList()).filter(x=>x.route==r);if(!v.length){ferr.textContent='搵唔到九巴路線「'+r+'」';return}
+ fdir.length=0;v.forEach((x,i)=>fdir.add(new Option((x.bound=='O'?'去程':'回程')+'：'+fx(x.orig_tc)+' → '+fx(x.dest_tc)+(x.service_type!='1'?'（特別班 '+x.service_type+'）':''),i)));fdir._v=v;fdir.style.display='';await fdirCh()}catch(e){ferr.textContent='載入失敗：'+e}};
+async function fdirCh(){const x=fdir._v[fdir.value];const rs=await j('route-stop/'+x.route+'/'+(x.bound=='O'?'outbound':'inbound')+'/'+x.service_type);fStops=rs.data||[];
+ await Promise.all(fStops.map(async s=>{if(!names[s.stop])names[s.stop]=(await j('stop/'+s.stop)).data}));try{localStorage.setItem('kmb284names',JSON.stringify(names))}catch(e){}
+ fstop.length=0;fStops.forEach((s,i)=>fstop.add(new Option(s.seq+'. '+fx(names[s.stop].name_tc),i)));fstop.style.display=fsave.style.display=''}
+fdir.onchange=fdirCh;
+fsave.onclick=()=>{const x=fdir._v[fdir.value],s=fStops[fstop.value],n=names[s.stop];const f={route:x.route,dir:x.bound,st:x.service_type,seq:+s.seq,stop:s.stop,name_tc:fx(n.name_tc),name_en:n.name_en,dest_tc:fx(x.dest_tc)};
+ if(favs.some(y=>y.route==f.route&&y.dir==f.dir&&y.st==f.st&&y.seq==f.seq)){ferr.textContent='已經收藏咗';return}favs.push(f);saveF();loadF()};
+async function loadF(){if(!favs.length){flist.innerHTML='<div class="s">未有收藏，請喺上面加入。</div>';fst.textContent='';return}
+ const res=await Promise.all(favs.map(f=>j('eta/'+f.stop+'/'+encodeURIComponent(f.route)+'/'+f.st).then(r=>r.data||[]).catch(()=>null)));let ts='—';
+ flist.innerHTML='';favs.forEach((f,i)=>{const d=res[i];const es=d?d.filter(e=>e.dir==f.dir&&e.seq==f.seq&&!(e.eta&&new Date(e.eta)<Date.now()-120000)):null;if(d&&d[0])ts=new Date(d[0].data_timestamp).toLocaleTimeString('zh-HK',{hour12:false,timeZone:'Asia/Hong_Kong'});
+  const el=document.createElement('div');el.className='s fav';el.innerHTML='<button class="del" data-i="'+i+'">刪除</button><div class="n">'+f.route+' 往 '+f.dest_tc+'</div><div class="n">'+f.seq+'. '+f.name_tc+'</div><div class="e">'+f.name_en+'</div><div class="t">'+(es==null?'載入失敗':es.length?es.map(fmt).join('<br>'):'暫無班次資料')+'</div>';flist.append(el)});
+ flist.querySelectorAll('.del').forEach(b=>b.onclick=()=>{favs.splice(+b.dataset.i,1);saveF();loadF()});
+ fst.textContent='最後更新：'+new Date().toLocaleTimeString('zh-HK',{hour12:false,timeZone:'Asia/Hong_Kong'})+'（九巴資料時間 '+ts+'，每30秒自動更新）'}
+setInterval(()=>{if(v2.style.display!='none')loadF()},30000);
+</script></body></html>
