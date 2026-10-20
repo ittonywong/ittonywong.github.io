@@ -1,15 +1,22 @@
-<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#00695c">
-<link rel="icon" href="data:,"><title>九巴即時到站</title><style>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#00695c">
+<link rel="icon" href="data:,"><title>KMB Real-time Arrivals</title><style>
 *{box-sizing:border-box}body{font-family:sans-serif;margin:0;background:#f4f4f4}header{background:#00695c;color:#fff;padding:12px}h1{margin:0;font-size:1.3em}
 .bar{padding:8px;display:flex;gap:6px;flex-wrap:wrap}select,input,button{font-size:1em;padding:6px;max-width:100%}input{flex:1;min-width:120px}
 .s{background:#fff;margin:6px 8px;padding:10px;border-radius:8px}.n{font-weight:bold}.e{color:#555;font-size:.85em}.t{color:#00695c;font-weight:bold;margin-top:4px}
 .tabs{display:flex}.tabs button{flex:1;border:0;padding:10px;background:#ddd}.tabs button.on{background:#fff;font-weight:bold;color:#00695c}.del{float:right;background:#fff;border:1px solid #ccc;border-radius:6px}.err{color:#8a4b00;padding:0 10px}#fst{padding:0 10px;font-size:.85em}#st{padding:0 10px;font-size:.85em;color:#333}
-.hd{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}#lang{font-size:.9em;padding:4px;border-radius:6px;border:0;background:#fff;color:#00695c}</style></head><body>
-<header><div class="hd"><h1 data-tr="title">九巴即時到站</h1><label><span class="sr" data-tr="lang" style="position:absolute;left:-9999px">語言</span><select id="lang" aria-label="Language"></select></label></div><div id="rt"></div></header>
-<div class="tabs"><button id="t1" class="on" data-tr="tab1">284 全線</button><button id="t2" data-tr="tab2">我的收藏</button></div><div id="v1"><div class="bar"><select id="dir"></select><select id="pick"><option value="" data-tr="allStops">全部車站</option></select><input id="q" placeholder="搜尋車站…" data-ip="search"><button id="r" data-tr="refresh">更新</button></div>
-<div id="st" data-tr="loading">載入中…</div><div id="list"></div></div>
-<div id="v2" style="display:none"><div class="bar"><input id="fr" placeholder="輸入路線（例如 1A）" data-ip="frPh" autocapitalize="characters"><button id="fgo" data-tr="fgo">搜尋路線</button></div>
-<div class="bar"><select id="fdir" style="display:none"></select><select id="fstop" style="display:none"></select><button id="fsave" style="display:none" data-tr="fsave">加入收藏</button></div>
+.hd{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:nowrap}
+h1{min-width:0;flex:1 1 auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.langw{position:relative;display:inline-flex;align-items:center;justify-content:center;min-width:32px;min-height:32px;padding:0 .1rem;cursor:pointer;flex:0 0 auto;color:#fff}
+.langw .lcode{display:inline-flex;align-items:center;gap:.2rem;font-size:.8rem;font-weight:700;border:1px solid #fff;border-radius:1rem;padding:.1rem .4rem;line-height:1.2;white-space:nowrap;background:rgba(255,255,255,.12)}
+.langw .lcode svg{width:.85rem;height:.85rem}
+.langw select{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;font-size:1rem;min-height:0}
+.langw:focus-within .lcode{outline:3px solid #80cbc4;outline-offset:2px}
+.sr{position:absolute;left:-9999px}</style></head><body>
+<header><div class="hd"><h1 data-tr="title">KMB Real-time Arrivals</h1><div class="langw"><label for="lang" class="sr" data-tr="lang">Language</label><span class="lcode" aria-hidden="true"><svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><g fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="8" cy="8" r="6.3"/><path d="M1.7 8h12.6M8 1.7c-3.2 3.6-3.2 9 0 12.6M8 1.7c3.2 3.6 3.2 9 0 12.6"/></g></svg><span id="lcodeT">EN</span></span><select id="lang" aria-label="Language"></select></div></div><div id="rt"></div></header>
+<div class="tabs"><button id="t1" class="on" data-tr="tab1">Route 284</button><button id="t2" data-tr="tab2">My Favourites</button></div><div id="v1"><div class="bar"><select id="dir"></select><select id="pick"><option value="" data-tr="allStops">All stops</option></select><input id="q" placeholder="Search stops…" data-ip="search"><button id="r" data-tr="refresh">Refresh</button></div>
+<div id="st" data-tr="loading">Loading…</div><div id="list"></div></div>
+<div id="v2" style="display:none"><div class="bar"><input id="fr" placeholder="Enter a route (e.g. 1A)" data-ip="frPh" autocapitalize="characters"><button id="fgo" data-tr="fgo">Find route</button></div>
+<div class="bar"><select id="fdir" style="display:none"></select><select id="fstop" style="display:none"></select><button id="fsave" style="display:none" data-tr="fsave">Add to favourites</button></div>
 <div id="ferr" class="err"></div><div id="fst"></div><div id="flist"></div></div>
 <script>
 // ---- i18n ----
@@ -37,8 +44,9 @@ const I18N={
 const RMK={ja:[[/^Scheduled Bus$/i,"時刻表上の便"],[/^(Final|Last) Bus$/i,"最終便"],[/^Delayed journey from (.+)$/i,"$1 から遅延"]],
  ko:[[/^Scheduled Bus$/i,"시간표 운행"],[/^(Final|Last) Bus$/i,"막차"],[/^Delayed journey from (.+)$/i,"$1에서 지연"]],
  mi:[[/^Scheduled Bus$/i,"Pahi kua whakaritea"],[/^(Final|Last) Bus$/i,"Pahi whakamutunga"],[/^Delayed journey from (.+)$/i,"Kua tōmuri mai i $1"]]};
-let LANG=localStorage.getItem('kmbLang');if(!I18N[LANG])LANG='zh-Hant';
-const T=(k,v={})=>(I18N[LANG][k]??I18N['zh-Hant'][k]).replace(/\{(\w+)\}/g,(_,x)=>v[x]??'');
+const LCODE={'zh-Hant':'繁','zh-Hans':'简',en:'EN',ja:'日',mi:'Mā',ko:'한'};
+let LANG=localStorage.getItem('kmbLang');if(!I18N[LANG])LANG='en';
+const T=(k,v={})=>(I18N[LANG][k]??I18N.en[k]??k).replace(/\{(\w+)\}/g,(_,x)=>v[x]??'');
 // 繁→簡後備對照（由九巴全部站名／路線名 name_tc↔name_sc 生成；API 有 name_sc 就直接用）
 const T2S=(()=>{const [a,b]="園總榮樓馬遊樂場體館東頭偉龍賈達勵書協學長倫轉車間碼寶靈恆豐郵愛聖醫圍劇強橫業曉麗觀創紀灣啟頤崗譽華處硤閣蘇蘿楊鴉蘭亞鄭禮讓賽會診療鵑興電鐘則黃營盤徑島義澤開獅嶺滿貴鴻紅鶴獲寧廟奧窩廣肅衛雲貫鳳張慶鑽運動畢祐廈蓮淨鐸順楓樹暉遠臺輔導機鸞維鄉氣硃聯濤匯鐵廠麼連區計劃貿稅務歷緻潔璽銘輪橋兒濱發眾勞資審藍當鯉魚門軍購勝萬實謙圖軒吳錦貢櫸臨悅譚珮諾駿凱戲欽輝鵲隊韻頌將墳風綜農員祿環來迴瑤堯瑪鹹領報國籬歡蔭磚隴饒貝棟專競統壩護盧葉濟綠圓纜網戶訓練斬誌碩議烏遜瀝職聽灝顯誠瑩麵壽萊瀅駕駛掃簡約欖灘點邊鍾財養羅鳴莊號變錢盞欄許願較謝銀舊賦濕巒藝翹賞牽覺娛傑爾銅鑼頓積蘆級親賢貨漁漢輸顏繡歐範別訊澗鹽躍響昇疊揚滾瓏兩塊檳線騰見調蠔儉麥鯽燒際堅塢師釗孫閘飛鴨賓僑陳類凍數陞鰂產進對視鵬邁湯釆單宮晉詩團時覽菴嶼幹檢暢‧薈樞紐記飲庫經媽|园总荣楼马游乐场体馆东头伟龙贾达励书协学长伦转车间码宝灵恒丰邮爱圣医围剧强横业晓丽观创纪湾启颐岗誉华处硖阁苏萝杨鸦兰亚郑礼让赛会诊疗鹃兴电钟则黄营盘径岛义泽开狮岭满贵鸿红鹤获宁庙奥窝广肃卫云贯凤张庆钻运动毕佑厦莲净铎顺枫树晖远台辅导机鸾维乡气朱联涛汇铁厂么连区计划贸税务历致洁玺铭轮桥儿滨发众劳资审蓝当鲤鱼门军购胜万实谦图轩吴锦贡榉临悦谭佩诺骏凯戏钦辉鹊队韵颂将坟风综农员禄环来回瑶尧玛咸领报国篱欢荫砖陇饶贝栋专竞统坝护卢叶济绿圆缆网户训练斩志硕议乌逊沥职听灏显诚莹面寿莱滢驾驶扫简约榄滩点边钟财养罗鸣庄号变钱盏栏许愿较谢银旧赋湿峦艺翘赏牵觉娱杰尔铜锣顿积芦级亲贤货渔汉输颜绣欧范别讯涧盐跃响升叠扬滚珑两块槟线腾见调蚝俭麦鲫烧际坚坞师钊孙闸飞鸭宾侨陈类冻数升鲗产进对视鹏迈汤采单宫晋诗团时览庵屿干检畅·荟枢纽记饮库经妈".split('|');const m={};[...a].forEach((c,i)=>m[c]=[...b][i]);return m})();
 const t2s=s=>[...(s||'')].map(c=>T2S[c]||c).join('');
@@ -99,7 +107,7 @@ async function loadF(){if(!favs.length){lastF=null;flist.innerHTML='<div class="
 setInterval(()=>{if(v2.style.display!='none')loadF()},30000);
 // ---- 語言切換 ----
 lang.innerHTML=LANGS.map(([k,v])=>'<option value="'+k+'"'+(k==='mi'?' lang="mi"':'')+'>'+v+'</option>').join('');
-function applyLang(){document.documentElement.lang=LANG;lang.value=LANG;document.title=T('title');
+function applyLang(){document.documentElement.lang=LANG;lang.value=LANG;const lc=document.getElementById('lcodeT');if(lc)lc.textContent=LCODE[LANG]||LANG;document.title=T('title');
  document.querySelectorAll('[data-tr]').forEach(e=>e.textContent=T(e.dataset.tr));document.querySelectorAll('[data-ip]').forEach(e=>e.placeholder=T(e.dataset.ip));
  if(!lastSt)st.textContent=T('loading');else showSt();
  fillDir();fill();if(fdir._v){const v=fdir.value;fdir.length=0;fdir._v.forEach((x,i)=>fdir.add(new Option(fdirLabel(x),i)));fdir.value=v;fillFstop()}
