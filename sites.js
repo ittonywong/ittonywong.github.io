@@ -4,7 +4,7 @@
  *   id     : 唯一代號 unique id
  *   url    : 網址 full URL
  *   zh/en  : 中文名 / English name
- *   icon   : ICONS 入面嘅名 (plane, bus, doubledecker, camera, cross, basket, person, globe)
+ *   icon   : ICONS 入面嘅名 (plane, bus, doubledecker, camera, cross, basket, person, globe, shop, bowl)
  *   tag    : 細標籤 small badge (optional), e.g. "🇭🇰 HK"
  *   color  : 圖示底色 tile colour
  */
@@ -16,7 +16,9 @@ window.SITES = [
   { id: "akltraffic", url: "https://ittonywong.github.io/akltraffic/", zh: "奧克蘭路況鏡頭", en: "Auckland Traffic Cams",    icon: "camera",       tag: "",      color: "#4a4a8a" },
   { id: "havesick",   url: "https://ittonywong.github.io/havesick/",   zh: "急症輪候時間",   en: "Have Sick (Urgent Care)",  icon: "cross",        tag: "",      color: "#c62828" },
   { id: "nzgrocery",  url: "https://ittonywong.github.io/nzgrocery/",  zh: "紐西蘭超市格價", en: "NZ Grocery Prices",        icon: "basket",       tag: "",      color: "#1b5e20" },
-  { id: "members",    url: "https://ittonywong.github.io/members/",    zh: "會員",           en: "Members",                  icon: "person",       tag: "",      color: "#5d4037" }
+  { id: "members",    url: "https://ittonywong.github.io/members/",    zh: "會員",           en: "Members",                  icon: "person",       tag: "",      color: "#5d4037" },
+  { id: "isocutestore", url: "https://ittonywong.github.io/isocutestore/", zh: "3D 打印網店", en: "3D Print Shop",           icon: "shop",         tag: "試用",  color: "#e65100" },
+  { id: "tonighteatwhatgive", url: "https://ittonywong.github.io/tonighteatwhatgive/", zh: "今晚食咩／菜譜", en: "Tonight's Recipes", icon: "bowl", tag: "", color: "#ad1457" }
 ];
 
 /* 原創簡單圖示 Original simple icons (viewBox 0 0 48 48, white strokes/fills) */
@@ -28,5 +30,7 @@ window.ICONS = {
   cross: '<path fill="currentColor" d="M18 6h12v12h12v12H30v12H18V30H6V18h12z"/>',
   basket: '<g fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"><path d="M5 19h38l-4 21H9z"/><path d="M15 19l6-12M33 19l-6-12M18 26v8M24 26v8M30 26v8"/></g>',
   person: '<g fill="currentColor"><circle cx="24" cy="15" r="8"/><path d="M8 42c0-9 7-15 16-15s16 6 16 15z"/></g>',
-  globe: '<g fill="none" stroke="currentColor" stroke-width="3"><circle cx="24" cy="24" r="17"/><path d="M7 24h34M24 7c-8 9-8 25 0 34M24 7c8 9 8 25 0 34"/></g>'
+  globe: '<g fill="none" stroke="currentColor" stroke-width="3"><circle cx="24" cy="24" r="17"/><path d="M7 24h34M24 7c-8 9-8 25 0 34M24 7c8 9 8 25 0 34"/></g>',
+  shop: '<g fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"><path d="M8 18h32l-2 22H10z"/><path d="M16 18V14a8 8 0 0 1 16 0v4"/><path d="M20 26h8"/></g>',
+  bowl: '<g fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"><path d="M8 22h32c0 10-7 16-16 16S8 32 8 22z"/><path d="M14 22c1-6 4-10 10-10s9 4 10 10"/><path d="M24 6v4M18 8l2 3M30 8l-2 3"/></g>'
 };
